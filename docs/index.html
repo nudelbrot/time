@@ -70,7 +70,7 @@
 
             function removeDatabase(){
                 let name = document.getElementById("account").value;
-                localStorage.removeItem(name);
+                window.vault.delete(name);
                 render();
             }
 
@@ -80,17 +80,16 @@
 
                 document.getElementById("account").value = value;
 
-                let response = window.database.data;
                 let table_template = document.getElementById('table-entry').innerHTML;
-                let entries = response.map((e)=>new Entry(e['id'], e['timestamp'], e['comment']));
+                let entries = window.database.data.map((e)=>new Entry(e['id'], e['timestamp'], e['comment']));
                 let table_rendered = Mustache.render(table_template, { values: entries });
                 document.getElementById('target').innerHTML = table_rendered;
             }
 
             function render() {
                 let accounts = []
-                for (let i = 0; i < localStorage.length; ++i){
-                    accounts.push({name: localStorage.key(i)});
+                for (let key of window.vault.keys){
+                    accounts.push({name: key});
                 }
 
                 let account_template = document.getElementById('account_template').innerHTML;

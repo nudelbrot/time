@@ -1,3 +1,61 @@
+class Vault {
+  constructor(key) {
+    this.key = key;
+    this.keys = undefined;
+    this.data = undefined;
+    if (localStorage.getItem(key) === null){
+      localStorage.setItem(key, "{}");
+      this.keys = [];
+    }
+    this.load();
+  }
+
+  load(){
+    this.data = JSON.parse(localStorage.getItem(this.key));
+    this.keys = [];
+    for(let key in this.data){
+      this.keys.push(key);
+    }
+  }
+
+  save(){
+    localStorage.setItem(this.key, JSON.stringify(this.data));
+  }
+
+  put(key, value){
+    this.load();
+    this.data[key] = value;
+    this.save();
+    this.load();
+  }
+
+  pull(key, fallback){
+    this.load();
+    if (key in this.data){
+      return this.data[key];
+    }
+    return fallback;
+  }
+
+  exists(key){
+    this.load();
+    return key in this.data;
+  }
+
+  delete(key){
+    this.load();
+    if (key in this.data){
+      delete this.data[key];
+    }
+    this.save();
+    this.load();
+  }
+
+  size(){
+    return this.keys.length;
+  }
+}
+
 class Entry {
     constructor(id, timestamp, comment) {
         this.id = id;
@@ -38,7 +96,7 @@ class Database {
     }
 
     save(){
-        localStorage[this.name] = JSON.stringify(this);
+        window.vault.put(this.name, this);
     }
 
     save_to_file(){
@@ -46,10 +104,10 @@ class Database {
     }
 
     load(){
-        if (localStorage.getItem(this.name) === null){
-            return;
+        if (!window.vault.exists(this.name)){
+          return;
         }
-        let dump = JSON.parse(localStorage[this.name]);
+        let dump = window.vault.pull(this.name, {"data": [], "counter": 0});
         this.data = dump.data;
         this.counter = dump.counter;
     }
@@ -58,3 +116,6 @@ class Database {
 
     }
 }
+
+window.vault = new Vault("nudelbrot.time");
+
