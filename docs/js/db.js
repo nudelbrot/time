@@ -95,6 +95,14 @@ class Database {
         this.save();
     }
 
+    modify(clause, changes){
+        var candidates = this.get(clause).map(changes);
+        for (let candidate of candidates){
+
+        }
+        this.save();
+    }
+
     save(){
         window.vault.put(this.name, this);
     }

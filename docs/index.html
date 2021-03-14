@@ -11,6 +11,36 @@
                 margin-right: auto;
                 display: block;
             }
+<style scoped="">
+        .button-success,
+        .button-error,
+        .button-warning,
+        .button-secondary {
+            color: white;
+            border-radius: 4px;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+        }
+
+        .button-success {
+            background: rgb(28, 184, 65);
+            /* this is a green */
+        }
+
+        .button-error {
+            background: rgb(202, 60, 60);
+            /* this is a maroon */
+        }
+
+        .button-warning {
+            background: rgb(223, 117, 20);
+            /* this is an orange */
+        }
+
+        .button-secondary {
+            background: rgb(66, 184, 221);
+            /* this is a light blue */
+        }
+    </style>
         </style>
     </head>
     <body onload="render()">
@@ -22,7 +52,8 @@
                 <div class="pure-form pure-form-stacked">
                     <input id="datum" class="pure-input" type="text" placeholder="YYYY-MM-TT HH:MM:SS"/>
                     <textarea id="comment" class="pure-input" type="text" placeholder="Comment"></textarea>
-                    <button onclick="add()" class="pure-button pure-button-primary">+</button>
+                    <button id="btn_add" onclick="add()" class="pure-button pure-button-primary">+</button>
+                    <button id="btn_change" class="pure-button button-warning" hidden>+</button>
                 </div>
             </div>
             <div class="pure-u-1 pure-u-md-4-5">
@@ -44,9 +75,9 @@
         <script id="table-entry" type="x-tmpl-mustache">
             {{#values}}
                 <tr id="entry-{{id}}">
-                    <td>{{timestamp}}</td>
-                    <td>{{comment}}</td>
-                    <td><a href="#edit">edit</a> <a href="#" onclick="del({{id}})">del</a></td>
+                    <td class="timestamp">{{timestamp}}</td>
+                    <td class="comment">{{comment}}</td>
+                    <td><a href="#" onclick="edit({{id}})">edit</a> <a href="#" onclick="del({{id}})">del</a></td>
                 </tr>
             {{/values}}
         </script>
@@ -97,20 +128,21 @@
                 document.getElementById('account-container').innerHTML = account_rendered;
 
                 selectDatabase(document.getElementById('account').value);
-
-
             }
 
             function add() {
                 let template = document.getElementById('table-entry').innerHTML;
-                let datum = document.getElementById("datum").value;
-                let comment = document.getElementById("comment").value;
-                let entry = new Entry(-1, datum, comment);
+                let datum = document.getElementById("datum");
+                let comment = document.getElementById("comment");
+                let entry = new Entry(-1, datum.value, comment.value);
 
                 window.database.insert(entry);
 
                 let rendered = Mustache.render(template, { values: [entry] });
                 document.getElementById('target').innerHTML += rendered;
+
+                datum.value = "";
+                comment.value = "";
             }
 
             function del(id){
@@ -119,8 +151,59 @@
             }
 
             function edit(id){
-                
+                let entries = window.database.get((entry) => entry.id == id);
+                let datum = document.getElementById("datum");
+                let comment = document.getElementById("comment");
+                for (let entry of entries){
+                    datum.value = entry.timestamp;
+                    comment.value = entry.comment;
+                    break;
+                }
+                let change_btn = document.getElementById("btn_change");
+                let add_btn = document.getElementById("btn_add");
+                let edit_id = id;
+                change_btn.addEventListener("click", ()=>{
+                    window.database.modify(
+                        (e)=>e.id == edit_id, 
+                        (e)=> {
+                            let datum = document.getElementById("datum");
+                            let comment = document.getElementById("comment");
+                            e.timestamp = datum.value;
+                            e.comment = comment.value;
+                            datum.value = "";
+                            comment.value = "";
+                            let html_entry = document.getElementById("entry-"+id);
+                            let entry_timestamp = html_entry.getElementsByClassName("timestamp")[0];
+                            let entry_comment = html_entry.getElementsByClassName("comment")[0];
+                            entry_timestamp.innerHTML = e.timestamp;
+                            entry_comment.innerHTML = e.comment;
+
+                            return e;
+                        });
+                    add_btn.removeAttribute("hidden");
+                    change_btn.setAttribute("hidden", "");
+                    change_btn.removeEventListener("click", this);
+                });
+                change_btn.removeAttribute("hidden");
+                add_btn.setAttribute("hidden", "");
             }
+
+            function change(){
+                let template = document.getElementById('table-entry').innerHTML;
+                let datum = document.getElementById("datum");
+                let comment = document.getElementById("comment");
+                let entry = new Entry(-1, datum.value, comment.value);
+
+                window.database.insert(entry);
+
+                let rendered = Mustache.render(template, { values: [entry] });
+                document.getElementById('target').innerHTML += rendered;
+
+                datum.value = "";
+                comment.value = "";
+            }
+
+
         </script>
         <script src="js/db.js"></script>
         <script src="js/mustache.min.js"></script>
